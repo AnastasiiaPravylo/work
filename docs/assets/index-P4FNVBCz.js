@@ -42,4 +42,4 @@ Error generating stack: `+u.message+`
         input:focus, textarea:focus { outline: 2px solid #bfdbfe; border-color: #93c5fd; }
         label > div { font-size: .9rem; color: #374151; margin-bottom: 6px; }
         section article { border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; }
-      `})]})}function Dd(){"serviceWorker"in navigator&&window.addEventListener("load",()=>{navigator.serviceWorker.register("/service-worker.js").catch(()=>{})})}Dd();tc(document.getElementById("root")).render(L.jsx(wc.StrictMode,{children:L.jsx(Od,{})}));
+      `})]})}function Dd(){"serviceWorker"in navigator&&window.addEventListener("load",()=>{const e=new URL("service-worker.js","/work/").toString();navigator.serviceWorker.register(e).catch(()=>{})})}Dd();tc(document.getElementById("root")).render(L.jsx(wc.StrictMode,{children:L.jsx(Od,{})}));

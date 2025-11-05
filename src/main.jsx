@@ -6,7 +6,8 @@ import './styles.css'
 function registerSW() {
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/service-worker.js').catch(() => {})
+      const swUrl = new URL('service-worker.js', import.meta.env.BASE_URL).toString()
+      navigator.serviceWorker.register(swUrl).catch(() => {})
     })
   }
 }
