@@ -1,0 +1,8 @@
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  base: '/work/', // назва репозиторію (в тебе work)
+  build: {
+    outDir: 'docs'
+  }
+})
