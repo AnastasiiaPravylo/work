@@ -3,8 +3,9 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/work/', // ← назва твого репозиторію
+  base: '/work/',      // назва репозиторію
   build: {
-    outDir: 'docs' // ← сюди збирається твій готовий сайт
+    outDir: 'docs'     // <- сюди збираємо
+    // emptyOutDir: true // (не обов’язково) Vite і так чистить docs, якщо воно в корені
   }
 })
