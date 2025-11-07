@@ -295,12 +295,12 @@ export default function App() {
       })()}
       {openId && edit && (
         <div role="dialog" aria-modal="true" style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'grid',placeItems:'center',padding:16,zIndex:50}} onClick={closeModal}>
-          <div onClick={e=>e.stopPropagation()} style={{background:'#fff',borderRadius:12, maxWidth:800, width:'100%', padding:16, boxShadow:'0 10px 30px rgba(0,0,0,0.2)'}}>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:'#fff',borderRadius:12, maxWidth:800, width:'100%', boxShadow:'0 10px 30px rgba(0,0,0,0.2)', display:'grid', gridTemplateRows:'auto 1fr auto', maxHeight:'90vh'}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:16,borderBottom:'1px solid #e5e7eb'}}>
               <h2 style={{margin:0,color:'#111827',fontWeight:700,fontSize:'1.25rem'}}>Деталі подорожі</h2>
               <button onClick={closeModal} style={{background:'transparent',border:'0',fontSize:22,cursor:'pointer'}}>&times;</button>
             </div>
-            <div style={{display:'grid',gap:12}}>
+            <div style={{display:'grid',gap:12, padding:16, overflowY:'auto'}}>
               <label>
                 <div>Локація</div>
                 <input value={edit.location} onChange={e=>setEdit({...edit, location:e.target.value})} style={{color:'#111827'}} />
@@ -329,10 +329,10 @@ export default function App() {
                   </div>
                 ))}
               </div>
-              <div style={{display:'flex',justifyContent:'flex-end',gap:8}}>
-                <button type="button" onClick={closeModal} style={{background:'#eee',border:'0',padding:'10px 14px',borderRadius:8,cursor:'pointer'}}>Скасувати</button>
-                <button type="button" onClick={saveEdit} style={{background:'#0078d4',color:'#fff',border:'0',padding:'10px 14px',borderRadius:8,cursor:'pointer'}}>Зберегти</button>
-              </div>
+            </div>
+            <div style={{display:'flex',justifyContent:'flex-end',gap:8, padding:16, borderTop:'1px solid #e5e7eb'}}>
+              <button type="button" onClick={closeModal} style={{background:'#eee',border:'0',padding:'10px 14px',borderRadius:8,cursor:'pointer'}}>Скасувати</button>
+              <button type="button" onClick={saveEdit} style={{background:'#0078d4',color:'#fff',border:'0',padding:'10px 14px',borderRadius:8,cursor:'pointer'}}>Зберегти</button>
             </div>
           </div>
         </div>
