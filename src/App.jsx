@@ -94,21 +94,26 @@ export default function App() {
               <input required type="date" value={form.date} onChange={e=>setForm({...form, date:e.target.value})} />
             </label>
           </div>
-          <label style={{display:'grid',gap:6,alignItems:'start'}}>
-            <div style={{fontSize:'.9rem',color:'#374151'}}>Фото (декілька, необов'язково)</div>
+          <label style={{display:'grid',gap:6,alignItems:'center',justifyItems:'center'}}>
+            <div style={{fontSize:'.9rem',color:'#374151',textAlign:'center'}}>Фото (декілька, необов'язково)</div>
             <input ref={fileInputRef} style={{display:'none'}} type="file" accept="image/*" multiple onChange={onFile} />
-            <div style={{display:'flex',gap:8,alignItems:'center'}}>
+            <div style={{display:'flex',gap:8,alignItems:'center',justifyContent:'center',width:'100%'}}>
               <button
                 type="button"
                 onClick={()=>fileInputRef.current?.click()}
                 style={{
                   background:'#ffffff',
                   border:'1px solid #e5e7eb',
-                  padding:'8px 12px',
+                  padding:'10px 14px',
                   borderRadius:8,
                   cursor:'pointer',
                   color:'#111827',
-                  boxShadow:'0 1px 2px rgba(0,0,0,0.04)'
+                  boxShadow:'0 1px 2px rgba(0,0,0,0.04)',
+                  height:'40px',
+                  display:'inline-flex',
+                  alignItems:'center',
+                  gap:6,
+                  font:'inherit'
                 }}
               >Підвантажити ще фото</button>
               {form.photos?.length > 0 && (
