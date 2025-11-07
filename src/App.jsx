@@ -303,15 +303,15 @@ export default function App() {
             <div style={{display:'grid',gap:12}}>
               <label>
                 <div>Локація</div>
-                <input value={edit.location} onChange={e=>setEdit({...edit, location:e.target.value})} />
+                <input value={edit.location} onChange={e=>setEdit({...edit, location:e.target.value})} style={{color:'#111827'}} />
               </label>
               <label>
                 <div>Дата</div>
-                <input type="date" value={edit.date} onChange={e=>setEdit({...edit, date:e.target.value})} />
+                <input type="date" value={edit.date} onChange={e=>setEdit({...edit, date:e.target.value})} style={{color:'#111827'}} />
               </label>
               <label>
                 <div>Опис</div>
-                <textarea rows={3} value={edit.description} onChange={e=>setEdit({...edit, description:e.target.value})} />
+                <textarea rows={3} value={edit.description} onChange={e=>setEdit({...edit, description:e.target.value})} style={{color:'#111827'}} />
               </label>
               <div style={{display:'grid',gap:8}}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
@@ -324,7 +324,7 @@ export default function App() {
                 {edit.photos?.length > 0 && edit.photos.map((p, idx) => (
                   <div key={idx} style={{display:'grid',gap:6,gridTemplateColumns:'140px 1fr auto',alignItems:'center'}}>
                     <img src={p.src} alt={`фото ${idx+1}`} style={{width:140,height:90,objectFit:'cover',borderRadius:6,border:'1px solid #e5e7eb'}} />
-                    <input placeholder="Підпис" value={p.caption||''} onChange={e=>modalUpdateCaption(idx, e.target.value)} />
+                    <input placeholder="Підпис" value={p.caption||''} onChange={e=>modalUpdateCaption(idx, e.target.value)} style={{color:'#111827'}} />
                     <button type="button" onClick={()=>modalRemovePhoto(idx)} style={{background:'#eee',border:'0',padding:'8px 10px',borderRadius:8,cursor:'pointer'}}>×</button>
                   </div>
                 ))}
