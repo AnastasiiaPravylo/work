@@ -23,7 +23,11 @@ export default function App() {
     description: '',
     photo: '',
     photos: [],
-    type: 'memory'
+    type: 'memory',
+    category: 'місто',
+    tagsText: '',
+    mood: 'ok', // 'bad' | 'ok' | 'super'
+    budget: ''
   })
 
   const fileInputRef = useRef(null)
@@ -35,6 +39,14 @@ export default function App() {
   const [viewIndex, setViewIndex] = useState(0)
   const [activeTab, setActiveTab] = useState('memory') // 'planned' | 'memory'
   const [formError, setFormError] = useState('')
+  const [filters, setFilters] = useState({
+    q: '',
+    category: 'all',
+    tag: '',
+    mood: 'all',
+    budgetMin: '',
+    budgetMax: ''
+  })
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries))
@@ -76,10 +88,13 @@ export default function App() {
       id: crypto.randomUUID(),
       photos: (form.photos && form.photos.length > 0)
         ? form.photos
-        : (form.photo ? [{ src: form.photo, caption: '' }] : [])
+        : (form.photo ? [{ src: form.photo, caption: '' }] : []),
+      tags: (form.tagsText||'').split(',').map(t=>t.trim()).filter(Boolean),
+      budget: form.budget !== '' ? Number(form.budget) : null,
+      mood: form.type === 'memory' ? form.mood : null
     }
     setEntries(prev => [...prev, normalized])
-    setForm({ location: '', date: '', description: '', photo: '', photos: [], type: activeTab })
+    setForm({ location: '', date: '', description: '', photo: '', photos: [], type: activeTab, category:'місто', tagsText:'', mood:'ok', budget:'' })
   }
 
   function onFile(e) {
@@ -122,9 +137,14 @@ export default function App() {
     // create deep-ish copy for editing
     setEdit({
       id: entry.id,
+      type: entry.type || 'memory',
       location: entry.location || '',
       date: entry.date || '',
       description: entry.description || '',
+      category: entry.category || 'місто',
+      tagsText: Array.isArray(entry.tags) ? entry.tags.join(', ') : '',
+      mood: entry.type === 'planned' ? null : (entry.mood || 'ok'),
+      budget: entry.budget != null ? String(entry.budget) : '',
       photos: Array.isArray(entry.photos) ? entry.photos.map(p=>({ ...p })) : (entry.photo ? [{ src: entry.photo, caption: '' }] : [])
     })
   }
@@ -157,7 +177,15 @@ export default function App() {
 
   function saveEdit() {
     if (!edit) return
-    setEntries(prev => prev.map(it => it.id === edit.id ? { ...it, ...edit } : it))
+    const normalized = {
+      ...edit,
+      tags: (edit.tagsText||'').split(',').map(t=>t.trim()).filter(Boolean),
+      budget: edit.budget !== '' ? Number(edit.budget) : null,
+      mood: edit.type === 'memory' ? edit.mood : null
+    }
+    // do not persist tagsText helper
+    delete normalized.tagsText
+    setEntries(prev => prev.map(it => it.id === edit.id ? { ...it, ...normalized } : it))
     setOpenId(null)
     setEdit(null)
   }
@@ -211,6 +239,38 @@ export default function App() {
               <input type="date" value={form.date} onChange={e=>setForm({...form, date:e.target.value})} />
               {formError && <div style={{color:'#b91c1c',fontSize:12,marginTop:4}}>{formError}</div>}
             </label>
+            <div style={{display:'grid',gridTemplateColumns: form.type==='memory' ? '1fr 1fr' : '1fr',gap:8}}>
+              <label>
+                <div>Категорія</div>
+                <select value={form.category} onChange={e=>setForm({...form, category:e.target.value})} style={{width:'100%',padding:'10px 12px',border:'1px solid #e5e7eb',borderRadius:8,font:'inherit'}}>
+                  <option>місто</option>
+                  <option>гора</option>
+                  <option>пляж</option>
+                  <option>природа</option>
+                  <option>інше</option>
+                </select>
+              </label>
+              {form.type==='memory' && (
+                <label>
+                  <div>Настрій</div>
+                  <select value={form.mood} onChange={e=>setForm({...form, mood:e.target.value})} style={{width:'100%',padding:'10px 12px',border:'1px solid #e5e7eb',borderRadius:8,font:'inherit'}}>
+                    <option value="super">Було супер</option>
+                    <option value="ok">Ок</option>
+                    <option value="bad">Не сподобалось</option>
+                  </select>
+                </label>
+              )}
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 160px',gap:8}}>
+              <label>
+                <div>Теги (через кому)</div>
+                <input value={form.tagsText} onChange={e=>setForm({...form, tagsText:e.target.value})} placeholder="кава, музей, парк" />
+              </label>
+              <label>
+                <div>Бюджет (грн)</div>
+                <input type="number" min="0" step="1" value={form.budget} onChange={e=>setForm({...form, budget:e.target.value})} placeholder="0" />
+              </label>
+            </div>
           </div>
           <label style={{display:'grid',gap:6,alignItems:'center',justifyItems:'center'}}>
             <div style={{fontSize:'.9rem',color:'#374151',textAlign:'center'}}>Фото (декілька, необов'язково)</div>
@@ -273,8 +333,72 @@ export default function App() {
 
       {!routeId && (
         <section style={{display:'grid',gap:12}}>
+          {/* Filters */}
+          <div style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:12,padding:16,marginBottom:24}}>
+            <div style={{display:'grid',gap:12,gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))',alignItems:'end'}}>
+              <label>
+                <div>Пошук</div>
+                <input value={filters.q} onChange={e=>setFilters({...filters,q:e.target.value})} placeholder="локація або опис" />
+              </label>
+              <label>
+                <div>Категорія</div>
+                <select value={filters.category} onChange={e=>setFilters({...filters,category:e.target.value})} style={{width:'100%',padding:'10px 12px',border:'1px solid #e5e7eb',borderRadius:8,font:'inherit',height:40}}>
+                  <option value="all">всі</option>
+                  <option value="місто">місто</option>
+                  <option value="гора">гора</option>
+                  <option value="пляж">пляж</option>
+                  <option value="природа">природа</option>
+                  <option value="інше">інше</option>
+                </select>
+              </label>
+              {activeTab==='memory' && (
+                <label>
+                  <div>Настрій</div>
+                  <select value={filters.mood} onChange={e=>setFilters({...filters,mood:e.target.value})} style={{width:'100%',padding:'10px 12px',border:'1px solid #e5e7eb',borderRadius:8,font:'inherit',height:40}}>
+                    <option value="all">всі</option>
+                    <option value="super">супер</option>
+                    <option value="ok">ок</option>
+                    <option value="bad">погано</option>
+                  </select>
+                </label>
+              )}
+              <label>
+                <div>Тег</div>
+                <input value={filters.tag} onChange={e=>setFilters({...filters,tag:e.target.value})} placeholder="пошук по тегу" />
+              </label>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+                <label>
+                  <div>Бюджет від</div>
+                  <input type="number" min="0" step="1" value={filters.budgetMin} onChange={e=>setFilters({...filters,budgetMin:e.target.value})} />
+                </label>
+                <label>
+                  <div>до</div>
+                  <input type="number" min="0" step="1" value={filters.budgetMax} onChange={e=>setFilters({...filters,budgetMax:e.target.value})} />
+                </label>
+              </div>
+            </div>
+          </div>
           {entries.length === 0 && <div style={{color:'#6b7280'}}>Поки що немає записів. Додайте перший!</div>}
-          {entries.filter(e=> e.type === activeTab).map(entry => (
+          {entries
+            .filter(e=> e.type === activeTab)
+            .filter(e=> {
+              if (filters.category !== 'all' && e.category !== filters.category) return false
+              if (activeTab==='memory' && filters.mood !== 'all' && e.mood !== filters.mood) return false
+              if (filters.q) {
+                const q = filters.q.toLowerCase()
+                const hay = `${e.location||''} ${e.description||''}`.toLowerCase()
+                if (!hay.includes(q)) return false
+              }
+              if (filters.tag) {
+                const t = filters.tag.toLowerCase()
+                const tags = (e.tags||[]).map(x=>x.toLowerCase())
+                if (!tags.some(x=>x.includes(t))) return false
+              }
+              if (filters.budgetMin !== '' && (e.budget==null || e.budget < Number(filters.budgetMin))) return false
+              if (filters.budgetMax !== '' && (e.budget==null || e.budget > Number(filters.budgetMax))) return false
+              return true
+            })
+            .map(entry => (
             <JournalEntry
               key={entry.id}
               entry={entry}
@@ -355,6 +479,38 @@ export default function App() {
                 <div>Опис</div>
                 <textarea rows={3} value={edit.description} onChange={e=>setEdit({...edit, description:e.target.value})} style={{color:'#111827'}} />
               </label>
+              <div style={{display:'grid',gridTemplateColumns: edit.type==='memory' ? '1fr 1fr' : '1fr',gap:8}}>
+                <label>
+                  <div>Категорія</div>
+                  <select value={edit.category||'місто'} onChange={e=>setEdit({...edit, category:e.target.value})} style={{width:'100%',padding:'10px 12px',border:'1px solid #e5e7eb',borderRadius:8,font:'inherit',color:'#111827'}}>
+                    <option>місто</option>
+                    <option>гора</option>
+                    <option>пляж</option>
+                    <option>природа</option>
+                    <option>інше</option>
+                  </select>
+                </label>
+                {edit.type==='memory' && (
+                  <label>
+                    <div>Настрій</div>
+                    <select value={edit.mood||'ok'} onChange={e=>setEdit({...edit, mood:e.target.value})} style={{width:'100%',padding:'10px 12px',border:'1px solid #e5e7eb',borderRadius:8,font:'inherit',color:'#111827'}}>
+                      <option value="super">Було супер 😍</option>
+                      <option value="ok">Ок 🙂</option>
+                      <option value="bad">Не сподобалось 😕</option>
+                    </select>
+                  </label>
+                )}
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 160px',gap:8}}>
+                <label>
+                  <div>Теги (через кому)</div>
+                  <input value={edit.tagsText||''} onChange={e=>setEdit({...edit, tagsText:e.target.value})} placeholder="кава, музей, парк" style={{color:'#111827'}} />
+                </label>
+                <label>
+                  <div>Бюджет (грн)</div>
+                  <input type="number" min="0" step="1" value={edit.budget||''} onChange={e=>setEdit({...edit, budget:e.target.value})} placeholder="0" style={{color:'#111827'}} />
+                </label>
+              </div>
               <div style={{display:'grid',gap:8}}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                   <strong>Фото</strong>
