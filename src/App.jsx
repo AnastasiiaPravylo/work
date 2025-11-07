@@ -21,10 +21,31 @@ export default function App() {
   })
 
   const fileInputRef = useRef(null)
+  const modalFileInputRef = useRef(null)
+
+  const [openId, setOpenId] = useState(null)
+  const [edit, setEdit] = useState(null)
+  const [routeId, setRouteId] = useState(null)
+  const [viewIndex, setViewIndex] = useState(0)
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries))
   }, [entries])
+
+  useEffect(() => {
+    function syncRoute() {
+      const m = window.location.hash.match(/^#\/entry\/(.+)$/)
+      setRouteId(m ? m[1] : null)
+    }
+    syncRoute()
+    window.addEventListener('hashchange', syncRoute)
+    return () => window.removeEventListener('hashchange', syncRoute)
+  }, [])
+
+  useEffect(() => {
+    // reset slider index on route change
+    setViewIndex(0)
+  }, [routeId])
 
   function addEntry(e) {
     e.preventDefault()
@@ -73,6 +94,64 @@ export default function App() {
 
   function removeEntry(id) {
     setEntries(prev => prev.filter(e => e.id !== id))
+  }
+
+  function openDetails(entry) {
+    setOpenId(entry.id)
+    // create deep-ish copy for editing
+    setEdit({
+      id: entry.id,
+      location: entry.location || '',
+      date: entry.date || '',
+      description: entry.description || '',
+      photos: Array.isArray(entry.photos) ? entry.photos.map(p=>({ ...p })) : (entry.photo ? [{ src: entry.photo, caption: '' }] : [])
+    })
+  }
+
+  function modalAddFiles(e) {
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+    files.forEach(file => {
+      const reader = new FileReader()
+      reader.onload = () => setEdit(ed => ({ ...ed, photos: [...(ed?.photos||[]), { src: reader.result, caption: '' }] }))
+      reader.readAsDataURL(file)
+    })
+  }
+
+  function modalUpdateCaption(i, v) {
+    setEdit(ed => {
+      const next = [...(ed?.photos||[])]
+      if (next[i]) next[i] = { ...next[i], caption: v }
+      return { ...ed, photos: next }
+    })
+  }
+
+  function modalRemovePhoto(i) {
+    setEdit(ed => {
+      const next = [...(ed?.photos||[])]
+      next.splice(i,1)
+      return { ...ed, photos: next }
+    })
+  }
+
+  function saveEdit() {
+    if (!edit) return
+    setEntries(prev => prev.map(it => it.id === edit.id ? { ...it, ...edit } : it))
+    setOpenId(null)
+    setEdit(null)
+  }
+
+  function closeModal() {
+    setOpenId(null)
+    setEdit(null)
+  }
+
+  function goToView(id) {
+    window.location.hash = `#/entry/${id}`
+  }
+
+  function goHome() {
+    window.location.hash = '#/'
   }
 
   return (
@@ -153,12 +232,111 @@ export default function App() {
         </div>
       </form>
 
-      <section style={{display:'grid',gap:12}}>
-        {entries.length === 0 && <div style={{color:'#6b7280'}}>Поки що немає записів. Додайте перший!</div>}
-        {entries.map(entry => (
-          <JournalEntry key={entry.id} entry={entry} onDelete={()=>removeEntry(entry.id)} />
-        ))}
-      </section>
+      {!routeId && (
+        <section style={{display:'grid',gap:12}}>
+          {entries.length === 0 && <div style={{color:'#6b7280'}}>Поки що немає записів. Додайте перший!</div>}
+          {entries.map(entry => (
+            <JournalEntry
+              key={entry.id}
+              entry={entry}
+              onDelete={()=>removeEntry(entry.id)}
+              onView={()=>goToView(entry.id)}
+              onEdit={()=>openDetails(entry)}
+            />
+          ))}
+        </section>
+      )}
+      {routeId && (() => {
+        const entry = entries.find(e => e.id === routeId)
+        if (!entry) return (
+          <section style={{display:'grid',gap:12}}>
+            <div style={{color:'#6b7280'}}>Запис не знайдено.</div>
+            <div><button onClick={goHome} style={{background:'#f3f4f6',border:'0',padding:'10px 14px',borderRadius:8,cursor:'pointer'}}>Назад</button></div>
+          </section>
+        )
+        return (
+          <section style={{display:'grid',gap:20, maxWidth:1680, margin:'0 auto', gridTemplateAreas:`
+            'left right'
+            'actions actions'
+          `, gridTemplateColumns:'220px 1fr'}}>
+            <aside style={{gridArea:'left',display:'grid',gap:10}}>
+              <h2 style={{margin:0,fontWeight:700,fontSize:'1.4rem'}}>{entry.location}</h2>
+              <div style={{color:'#6b7280'}}>{new Date(entry.date).toLocaleDateString()}</div>
+              {entry.description && <p style={{margin:0}}>{entry.description}</p>}
+            </aside>
+            <div style={{gridArea:'right',display:'grid',gap:16,justifyItems:'stretch'}}>
+              {Array.isArray(entry.photos) && entry.photos.length > 0 ? (
+                <>
+                  <div style={{position:'relative', width:'100%'}}>
+                    <button onClick={()=>setViewIndex(i=> (i-1+entry.photos.length)%entry.photos.length)} aria-label="Попереднє фото" style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',background:'#ffffffcc',border:'1px solid #e5e7eb',borderRadius:999,padding:'8px 12px',cursor:'pointer'}}>‹</button>
+                    <img src={entry.photos[viewIndex]?.src} alt={`Фото ${viewIndex+1}`} style={{display:'block',width:'100%',height:'auto',maxHeight:'80vh',objectFit:'contain',background:'rgba(255,255,255,.03)',borderRadius:12,border:'1px solid #e5e7eb'}} />
+                    <button onClick={()=>setViewIndex(i=> (i+1)%entry.photos.length)} aria-label="Наступне фото" style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',background:'#ffffffcc',border:'1px solid #e5e7eb',borderRadius:999,padding:'8px 12px',cursor:'pointer'}}>›</button>
+                  </div>
+                  <div style={{textAlign:'center',color:'#6b7280'}}>Фото {viewIndex+1} з {entry.photos.length}</div>
+                  <div>
+                    <div style={{fontWeight:600, marginBottom:6}}>Підписи</div>
+                    <ul style={{listStyle:'decimal', paddingLeft:18, margin:0, display:'grid', gap:6}}>
+                      {entry.photos.map((p,i)=> (
+                        <li key={i} style={{color: i===viewIndex ? '#111827' : '#4b5563'}}>{p.caption || 'Без підпису'}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </>
+              ) : (entry.photo ? (
+                <img src={entry.photo} alt="Фото" style={{width:'100%',height:'auto',maxHeight:'80vh',objectFit:'contain',background:'rgba(255,255,255,.03)',borderRadius:12,border:'1px solid #e5e7eb'}} />
+              ) : null)}
+            </div>
+            <div style={{gridArea:'actions',display:'flex',gap:12,justifyContent:'flex-start',marginTop:4}}>
+              <button onClick={goHome} style={{background:'#f3f4f6',border:'0',padding:'10px 16px',borderRadius:8,cursor:'pointer',height:40}}>Назад</button>
+              <button onClick={()=>openDetails(entry)} style={{background:'#e0f2fe',border:'0',padding:'10px 16px',borderRadius:8,cursor:'pointer',color:'#075985',height:40}}>Редагувати</button>
+            </div>
+          </section>
+        )
+      })()}
+      {openId && edit && (
+        <div role="dialog" aria-modal="true" style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'grid',placeItems:'center',padding:16,zIndex:50}} onClick={closeModal}>
+          <div onClick={e=>e.stopPropagation()} style={{background:'#fff',borderRadius:12, maxWidth:800, width:'100%', padding:16, boxShadow:'0 10px 30px rgba(0,0,0,0.2)'}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
+              <h2 style={{margin:0,color:'#111827',fontWeight:700,fontSize:'1.25rem'}}>Деталі подорожі</h2>
+              <button onClick={closeModal} style={{background:'transparent',border:'0',fontSize:22,cursor:'pointer'}}>&times;</button>
+            </div>
+            <div style={{display:'grid',gap:12}}>
+              <label>
+                <div>Локація</div>
+                <input value={edit.location} onChange={e=>setEdit({...edit, location:e.target.value})} />
+              </label>
+              <label>
+                <div>Дата</div>
+                <input type="date" value={edit.date} onChange={e=>setEdit({...edit, date:e.target.value})} />
+              </label>
+              <label>
+                <div>Опис</div>
+                <textarea rows={3} value={edit.description} onChange={e=>setEdit({...edit, description:e.target.value})} />
+              </label>
+              <div style={{display:'grid',gap:8}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                  <strong>Фото</strong>
+                  <div>
+                    <input ref={modalFileInputRef} style={{display:'none'}} type="file" accept="image/*" multiple onChange={modalAddFiles} />
+                    <button type="button" onClick={()=>modalFileInputRef.current?.click()} style={{background:'#f3f4f6',border:'1px solid #e5e7eb',padding:'8px 12px',borderRadius:8,cursor:'pointer'}}>Додати фото</button>
+                  </div>
+                </div>
+                {edit.photos?.length > 0 && edit.photos.map((p, idx) => (
+                  <div key={idx} style={{display:'grid',gap:6,gridTemplateColumns:'140px 1fr auto',alignItems:'center'}}>
+                    <img src={p.src} alt={`фото ${idx+1}`} style={{width:140,height:90,objectFit:'cover',borderRadius:6,border:'1px solid #e5e7eb'}} />
+                    <input placeholder="Підпис" value={p.caption||''} onChange={e=>modalUpdateCaption(idx, e.target.value)} />
+                    <button type="button" onClick={()=>modalRemovePhoto(idx)} style={{background:'#eee',border:'0',padding:'8px 10px',borderRadius:8,cursor:'pointer'}}>×</button>
+                  </div>
+                ))}
+              </div>
+              <div style={{display:'flex',justifyContent:'flex-end',gap:8}}>
+                <button type="button" onClick={closeModal} style={{background:'#eee',border:'0',padding:'10px 14px',borderRadius:8,cursor:'pointer'}}>Скасувати</button>
+                <button type="button" onClick={saveEdit} style={{background:'#0078d4',color:'#fff',border:'0',padding:'10px 14px',borderRadius:8,cursor:'pointer'}}>Зберегти</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <footer>
         Збереження в localStorage · Працює офлайн · Installable PWA

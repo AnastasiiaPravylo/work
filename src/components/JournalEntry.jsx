@@ -1,6 +1,6 @@
 import React from 'react'
 
-export default function JournalEntry({ entry, onDelete }) {
+export default function JournalEntry({ entry, onDelete, onView, onEdit }) {
   return (
     <article>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:12,flexWrap:'wrap'}}>
@@ -24,8 +24,10 @@ export default function JournalEntry({ entry, onDelete }) {
         ) : null
       )}
       {entry.description && <p style={{margin:'8px 0 0'}}>{entry.description}</p>}
-      <div style={{display:'flex',justifyContent:'flex-end'}}>
-        <button onClick={onDelete} style={{background:'#fee2e2',color:'#991b1b',border:'0',padding:'8px 12px',borderRadius:8,cursor:'pointer'}}>Видалити</button>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginTop:12}}>
+        <button onClick={onView} style={{background:'#f3f4f6',border:'0',height:36,borderRadius:8,cursor:'pointer'}}>Переглянути</button>
+        <button onClick={onEdit} style={{background:'#e0f2fe',border:'0',height:36,borderRadius:8,cursor:'pointer',color:'#075985'}}>Редагувати</button>
+        <button onClick={onDelete} style={{background:'#fee2e2',color:'#991b1b',border:'0',height:36,borderRadius:8,cursor:'pointer'}}>Видалити</button>
       </div>
     </article>
   )
