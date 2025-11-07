@@ -6,7 +6,12 @@ const STORAGE_KEY = 'journalEntries'
 export default function App() {
   const [entries, setEntries] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
+      const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
+      // migrate: ensure type
+      return Array.isArray(raw) ? raw.map(it => ({
+        type: 'type' in it ? it.type : 'memory',
+        ...it
+      })) : []
     } catch {
       return []
     }
@@ -17,7 +22,8 @@ export default function App() {
     date: '',
     description: '',
     photo: '',
-    photos: []
+    photos: [],
+    type: 'memory'
   })
 
   const fileInputRef = useRef(null)
@@ -27,6 +33,8 @@ export default function App() {
   const [edit, setEdit] = useState(null)
   const [routeId, setRouteId] = useState(null)
   const [viewIndex, setViewIndex] = useState(0)
+  const [activeTab, setActiveTab] = useState('memory') // 'planned' | 'memory'
+  const [formError, setFormError] = useState('')
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries))
@@ -49,7 +57,20 @@ export default function App() {
 
   function addEntry(e) {
     e.preventDefault()
-    if (!form.location || !form.date) return
+    setFormError('')
+    if (!form.location) {
+      setFormError('Вкажіть локацію')
+      return
+    }
+    // validation by type
+    const today = new Date()
+    today.setHours(0,0,0,0)
+    const hasDate = !!form.date
+    const d = hasDate ? new Date(form.date) : null
+    if (form.type === 'memory') {
+      if (!hasDate) { setFormError('Для спогаду потрібна дата'); return }
+      if (d > today) { setFormError('Дата спогаду не може бути в майбутньому'); return }
+    }
     const normalized = {
       ...form,
       id: crypto.randomUUID(),
@@ -58,7 +79,7 @@ export default function App() {
         : (form.photo ? [{ src: form.photo, caption: '' }] : [])
     }
     setEntries(prev => [...prev, normalized])
-    setForm({ location: '', date: '', description: '', photo: '', photos: [] })
+    setForm({ location: '', date: '', description: '', photo: '', photos: [], type: activeTab })
   }
 
   function onFile(e) {
@@ -154,12 +175,29 @@ export default function App() {
     window.location.hash = '#/'
   }
 
+  // helper: convert planned -> memory
+  function convertToMemory(entryId) {
+    setEntries(prev => prev.map(it => {
+      if (it.id !== entryId) return it
+      const today = new Date()
+      const ymd = new Date(today.getTime()); ymd.setHours(0,0,0,0)
+      const dateStr = it.date ? it.date : new Date().toISOString().slice(0,10)
+      return { ...it, type: 'memory', date: dateStr }
+    }))
+  }
+
   return (
     <div className="container">
       <header>
         <h1>Travel Journal</h1>
         <span className="tag">PWA</span>
       </header>
+
+      {/* Tabs */}
+      <div style={{display:'flex',gap:16,marginTop:12,marginBottom:16}}>
+        <button onClick={()=>{setActiveTab('memory'); setForm(f=>({...f, type:'memory'}))}} style={{background: activeTab==='memory'?'#e0e7ff':'#f3f4f6',border:'0',padding:'8px 12px',borderRadius:999,cursor:'pointer'}}>Спогади</button>
+        <button onClick={()=>{setActiveTab('planned'); setForm(f=>({...f, type:'planned'}))}} style={{background: activeTab==='planned'?'#d1fae5':'#f3f4f6',border:'0',padding:'8px 12px',borderRadius:999,cursor:'pointer'}}>Заплановані</button>
+      </div>
 
       <form onSubmit={addEntry} style={{display:'grid',gap:12,marginBottom:24}}>
         <div style={{display:'grid',gap:8,gridTemplateColumns:'1fr 220px',alignItems:'end'}}>
@@ -169,8 +207,9 @@ export default function App() {
               <input required value={form.location} onChange={e=>setForm({...form, location:e.target.value})} placeholder="Kyiv, UA" />
             </label>
             <label>
-              <div>Дата</div>
-              <input required type="date" value={form.date} onChange={e=>setForm({...form, date:e.target.value})} />
+              <div>Дата {form.type==='memory' ? '(обовʼязково, не в майбутньому)' : '(необовʼязково)'}</div>
+              <input type="date" value={form.date} onChange={e=>setForm({...form, date:e.target.value})} />
+              {formError && <div style={{color:'#b91c1c',fontSize:12,marginTop:4}}>{formError}</div>}
             </label>
           </div>
           <label style={{display:'grid',gap:6,alignItems:'center',justifyItems:'center'}}>
@@ -235,7 +274,7 @@ export default function App() {
       {!routeId && (
         <section style={{display:'grid',gap:12}}>
           {entries.length === 0 && <div style={{color:'#6b7280'}}>Поки що немає записів. Додайте перший!</div>}
-          {entries.map(entry => (
+          {entries.filter(e=> e.type === activeTab).map(entry => (
             <JournalEntry
               key={entry.id}
               entry={entry}
@@ -289,6 +328,9 @@ export default function App() {
             <div style={{gridArea:'actions',display:'flex',gap:12,justifyContent:'flex-start',marginTop:4}}>
               <button onClick={goHome} style={{background:'#f3f4f6',border:'0',padding:'10px 16px',borderRadius:8,cursor:'pointer',height:40}}>Назад</button>
               <button onClick={()=>openDetails(entry)} style={{background:'#e0f2fe',border:'0',padding:'10px 16px',borderRadius:8,cursor:'pointer',color:'#075985',height:40}}>Редагувати</button>
+              {entry.type === 'planned' && (
+                <button onClick={()=>convertToMemory(entry.id)} style={{background:'#ede9fe',border:'0',padding:'10px 16px',borderRadius:8,cursor:'pointer',color:'#5b21b6',height:40}}>Позначити як спогад</button>
+              )}
             </div>
           </section>
         )

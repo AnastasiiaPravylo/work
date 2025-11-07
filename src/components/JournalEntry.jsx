@@ -8,9 +8,16 @@ export default function JournalEntry({ entry, onDelete, onView, onEdit }) {
 
   return (
     <article>
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:12,flexWrap:'wrap'}}>
-        <h3 style={{margin:'4px 0'}}>{entry.location}</h3>
-        <div className="meta">{new Date(entry.date).toLocaleDateString()}</div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,flexWrap:'wrap'}}>
+        <h3 style={{margin:'4px 0',display:'flex',alignItems:'center',gap:8}}>
+          {entry.location}
+          <span style={{fontSize:12,padding:'2px 8px',borderRadius:999,background: entry.type==='planned' ? '#d1fae5' : '#ede9fe', color: entry.type==='planned' ? '#065f46' : '#5b21b6'}}>
+            {entry.type==='planned' ? 'Заплановано' : 'Спогад'}
+          </span>
+        </h3>
+        <div className="meta" style={{color:'#6b7280'}}>
+          {entry.type==='planned' ? (entry.date ? new Date(entry.date).toLocaleDateString() : 'Без дати') : (entry.date ? new Date(entry.date).toLocaleDateString() : '')}
+        </div>
       </div>
       {count > 0 ? (
         <div style={{position:'relative', margin:'8px 0'}}>
