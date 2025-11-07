@@ -1,29 +1,30 @@
-import React from 'react'
+import React, { useState } from 'react'
 
 export default function JournalEntry({ entry, onDelete, onView, onEdit }) {
+  const [idx, setIdx] = useState(0)
+  const photos = Array.isArray(entry.photos) ? entry.photos : []
+  const count = photos.length
+  const current = count > 0 ? photos[((idx % count) + count) % count] : null
+
   return (
     <article>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:12,flexWrap:'wrap'}}>
         <h3 style={{margin:'4px 0'}}>{entry.location}</h3>
         <div className="meta">{new Date(entry.date).toLocaleDateString()}</div>
       </div>
-      {Array.isArray(entry.photos) && entry.photos.length > 0 ? (
-        <div style={{display:'grid',gap:8,margin:'8px 0'}}>
-          {entry.photos.map((p, idx) => (
-            <figure key={idx} style={{margin:0}}>
-              <img src={p.src} alt={`Фото ${idx+1}`} style={{width:'100%',maxHeight:300,objectFit:'cover',borderRadius:8,border:'1px solid #e5e7eb'}} />
-              {p.caption ? (
-                <figcaption style={{fontSize:'.9rem',color:'#4b5563',marginTop:6}}>{p.caption}</figcaption>
-              ) : null}
-            </figure>
-          ))}
+      {count > 0 ? (
+        <div style={{position:'relative', margin:'8px 0'}}>
+          <img src={current.src} alt={`Фото ${((idx%count)+count)%count + 1}`} style={{display:'block',width:'100%',height:220,objectFit:'cover',borderRadius:8,border:'1px solid #e5e7eb'}} />
+          <button onClick={()=>setIdx(i=>i-1)} aria-label="Попереднє фото" style={{position:'absolute',left:8,top:'50%',transform:'translateY(-50%)',background:'#ffffffcc',border:'1px solid #e5e7eb',borderRadius:999,padding:'4px 10px',cursor:'pointer'}}>‹</button>
+          <button onClick={()=>setIdx(i=>i+1)} aria-label="Наступне фото" style={{position:'absolute',right:8,top:'50%',transform:'translateY(-50%)',background:'#ffffffcc',border:'1px solid #e5e7eb',borderRadius:999,padding:'4px 10px',cursor:'pointer'}}>›</button>
+          <div style={{position:'absolute',right:8,bottom:8,background:'#111827cc',color:'#fff',fontSize:12,padding:'2px 8px',borderRadius:999}}>{((idx%count)+count)%count + 1}/{count}</div>
         </div>
       ) : (
         entry.photo ? (
-          <img src={entry.photo} alt="Фото подорожі" style={{width:'100%',maxHeight:300,objectFit:'cover',borderRadius:8,margin:'8px 0'}} />
+          <img src={entry.photo} alt="Фото подорожі" style={{width:'100%',height:220,objectFit:'cover',borderRadius:8,margin:'8px 0'}} />
         ) : null
       )}
-      {entry.description && <p style={{margin:'8px 0 0'}}>{entry.description}</p>}
+      {current?.caption ? <div style={{fontSize:'.9rem',color:'#4b5563'}}>{current.caption}</div> : (entry.description && <p style={{margin:'8px 0 0'}}>{entry.description}</p>)}
       <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginTop:12}}>
         <button onClick={onView} style={{background:'#f3f4f6',border:'0',height:36,borderRadius:8,cursor:'pointer'}}>Переглянути</button>
         <button onClick={onEdit} style={{background:'#e0f2fe',border:'0',height:36,borderRadius:8,cursor:'pointer',color:'#075985'}}>Редагувати</button>
