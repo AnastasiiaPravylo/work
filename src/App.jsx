@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import JournalEntry from './components/JournalEntry.jsx'
 
 const STORAGE_KEY = 'journalEntries'
@@ -16,8 +16,11 @@ export default function App() {
     location: '',
     date: '',
     description: '',
-    photo: ''
+    photo: '',
+    photos: []
   })
+
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries))
@@ -26,16 +29,46 @@ export default function App() {
   function addEntry(e) {
     e.preventDefault()
     if (!form.location || !form.date) return
-    setEntries(prev => [...prev, { ...form, id: crypto.randomUUID() }])
-    setForm({ location: '', date: '', description: '', photo: '' })
+    const normalized = {
+      ...form,
+      id: crypto.randomUUID(),
+      photos: (form.photos && form.photos.length > 0)
+        ? form.photos
+        : (form.photo ? [{ src: form.photo, caption: '' }] : [])
+    }
+    setEntries(prev => [...prev, normalized])
+    setForm({ location: '', date: '', description: '', photo: '', photos: [] })
   }
 
   function onFile(e) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => setForm(f => ({ ...f, photo: reader.result }))
-    reader.readAsDataURL(file)
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+    files.forEach(file => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        setForm(f => ({
+          ...f,
+          photos: [...(f.photos || []), { src: reader.result, caption: '' }]
+        }))
+      }
+      reader.readAsDataURL(file)
+    })
+  }
+
+  function updateCaption(index, value) {
+    setForm(f => {
+      const next = [...(f.photos || [])]
+      if (next[index]) next[index] = { ...next[index], caption: value }
+      return { ...f, photos: next }
+    })
+  }
+
+  function removeSelectedPhoto(index) {
+    setForm(f => {
+      const next = [...(f.photos || [])]
+      next.splice(index, 1)
+      return { ...f, photos: next }
+    })
   }
 
   function removeEntry(id) {
@@ -50,7 +83,7 @@ export default function App() {
       </header>
 
       <form onSubmit={addEntry} style={{display:'grid',gap:12,marginBottom:24}}>
-        <div style={{display:'grid',gap:8,gridTemplateColumns:'1fr 180px',alignItems:'end'}}>
+        <div style={{display:'grid',gap:8,gridTemplateColumns:'1fr 220px',alignItems:'end'}}>
           <div style={{display:'grid',gap:8}}>
             <label>
               <div>Локація</div>
@@ -61,11 +94,50 @@ export default function App() {
               <input required type="date" value={form.date} onChange={e=>setForm({...form, date:e.target.value})} />
             </label>
           </div>
-          <label style={{display:'grid',gap:8}}>
-            <div>Фото (необов'язково)</div>
-            <input type="file" accept="image/*" onChange={onFile} />
+          <label style={{display:'grid',gap:6,alignItems:'start'}}>
+            <div style={{fontSize:'.9rem',color:'#374151'}}>Фото (декілька, необов'язково)</div>
+            <input ref={fileInputRef} style={{display:'none'}} type="file" accept="image/*" multiple onChange={onFile} />
+            <div style={{display:'flex',gap:8,alignItems:'center'}}>
+              <button
+                type="button"
+                onClick={()=>fileInputRef.current?.click()}
+                style={{
+                  background:'#ffffff',
+                  border:'1px solid #e5e7eb',
+                  padding:'8px 12px',
+                  borderRadius:8,
+                  cursor:'pointer',
+                  color:'#111827',
+                  boxShadow:'0 1px 2px rgba(0,0,0,0.04)'
+                }}
+              >Підвантажити ще фото</button>
+              {form.photos?.length > 0 && (
+                <span style={{
+                  fontSize:'.8rem',
+                  color:'#3730a3',
+                  background:'#eef2ff',
+                  padding:'3px 8px',
+                  borderRadius:999
+                }}>Додано: {form.photos.length}</span>
+              )}
+            </div>
           </label>
         </div>
+        {form.photos?.length > 0 && (
+          <div style={{display:'grid',gap:8}}>
+            {form.photos.map((p, idx) => (
+              <div key={idx} style={{display:'grid',gap:6,gridTemplateColumns:'120px 1fr auto',alignItems:'center'}}>
+                <img src={p.src} alt="прев'ю" style={{width:120,height:80,objectFit:'cover',borderRadius:6,border:'1px solid #e5e7eb'}} />
+                <input
+                  placeholder="Підпис до фото"
+                  value={p.caption || ''}
+                  onChange={e=>updateCaption(idx,e.target.value)}
+                />
+                <button type="button" onClick={()=>removeSelectedPhoto(idx)} style={{background:'#eee',border:'0',padding:'8px 10px',borderRadius:8,cursor:'pointer'}}>×</button>
+              </div>
+            ))}
+          </div>
+        )}
         <label>
           <div>Опис</div>
           <textarea rows={3} value={form.description} onChange={e=>setForm({...form, description:e.target.value})} placeholder="Короткий опис пригод" />
