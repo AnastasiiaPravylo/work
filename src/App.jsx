@@ -127,6 +127,12 @@ export default function App() {
       if (!hasDate) { setFormError('Для спогаду потрібна дата'); return }
       if (d > today) { setFormError('Дата спогаду не може бути в майбутньому'); return }
     }
+    if (form.type === 'planned') {
+      if (hasDate) {
+        const dd = new Date(form.date); dd.setHours(0,0,0,0)
+        if (dd < today) { setFormError('Дата запланованої події не може бути в минулому'); return }
+      }
+    }
     const normalized = {
       ...form,
       id: crypto.randomUUID(),
@@ -221,6 +227,12 @@ export default function App() {
 
   function saveEdit() {
     if (!edit) return
+    // planned cannot be in the past (if date provided)
+    if (edit.type === 'planned' && edit.date) {
+      const today = new Date(); today.setHours(0,0,0,0)
+      const dd = new Date(edit.date); dd.setHours(0,0,0,0)
+      if (dd < today) { alert('Дата запланованої події не може бути в минулому'); return }
+    }
     const normalized = {
       ...edit,
       tags: (edit.tagsText||'').split(',').map(t=>t.trim()).filter(Boolean),
