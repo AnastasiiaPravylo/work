@@ -45,8 +45,13 @@ export default function App() {
     tag: '',
     mood: 'all',
     budgetMin: '',
-    budgetMax: ''
+    budgetMax: '',
+    dateExact: ''
   })
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d
+  })
+  const [cols, setCols] = useState(1)
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries))
@@ -66,6 +71,45 @@ export default function App() {
     // reset slider index on route change
     setViewIndex(0)
   }, [routeId])
+
+  useEffect(() => {
+    function computeCols() {
+      const w = window.innerWidth
+      if (w >= 1300) setCols(3)
+      else if (w >= 900) setCols(2)
+      else setCols(1)
+    }
+    computeCols()
+    window.addEventListener('resize', computeCols)
+    return () => window.removeEventListener('resize', computeCols)
+  }, [])
+
+  // Helpers for dates and planned actions
+  function ymd(dateStr) {
+    try { return new Date(dateStr).toISOString().slice(0,10) } catch { return '' }
+  }
+  function isPast(dateStr) {
+    if (!dateStr) return false
+    const t = new Date(); t.setHours(0,0,0,0)
+    const d = new Date(dateStr); d.setHours(0,0,0,0)
+    return d < t
+  }
+  function isSoon(dateStr) {
+    if (!dateStr) return false
+    const today = new Date(); today.setHours(0,0,0,0)
+    const d = new Date(dateStr); d.setHours(0,0,0,0)
+    const diff = (d - today) / (1000*60*60*24)
+    return diff >= 0 && diff <= 7
+  }
+
+  function rescheduleEntry(entryId) {
+    const current = entries.find(e=>e.id===entryId)?.date || ''
+    const next = window.prompt('Нова дата (YYYY-MM-DD):', current)
+    if (!next) return
+    const isValid = /^\d{4}-\d{2}-\d{2}$/.test(next)
+    if (!isValid) { alert('Невірний формат. Використовуйте YYYY-MM-DD'); return }
+    setEntries(prev => prev.map(it => it.id === entryId ? { ...it, date: next } : it))
+  }
 
   function addEntry(e) {
     e.preventDefault()
@@ -332,53 +376,106 @@ export default function App() {
       </form>
 
       {!routeId && (
-        <section style={{display:'grid',gap:12}}>
-          {/* Filters */}
-          <div style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:12,padding:16,marginBottom:24}}>
-            <div style={{display:'grid',gap:12,gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))',alignItems:'end'}}>
-              <label>
-                <div>Пошук</div>
-                <input value={filters.q} onChange={e=>setFilters({...filters,q:e.target.value})} placeholder="локація або опис" />
-              </label>
-              <label>
-                <div>Категорія</div>
-                <select value={filters.category} onChange={e=>setFilters({...filters,category:e.target.value})} style={{width:'100%',padding:'10px 12px',border:'1px solid #e5e7eb',borderRadius:8,font:'inherit',height:40}}>
-                  <option value="all">всі</option>
-                  <option value="місто">місто</option>
-                  <option value="гора">гора</option>
-                  <option value="пляж">пляж</option>
-                  <option value="природа">природа</option>
-                  <option value="інше">інше</option>
-                </select>
-              </label>
-              {activeTab==='memory' && (
-                <label>
-                  <div>Настрій</div>
-                  <select value={filters.mood} onChange={e=>setFilters({...filters,mood:e.target.value})} style={{width:'100%',padding:'10px 12px',border:'1px solid #e5e7eb',borderRadius:8,font:'inherit',height:40}}>
-                    <option value="all">всі</option>
-                    <option value="super">супер</option>
-                    <option value="ok">ок</option>
-                    <option value="bad">погано</option>
-                  </select>
-                </label>
-              )}
-              <label>
-                <div>Тег</div>
-                <input value={filters.tag} onChange={e=>setFilters({...filters,tag:e.target.value})} placeholder="пошук по тегу" />
-              </label>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-                <label>
-                  <div>Бюджет від</div>
-                  <input type="number" min="0" step="1" value={filters.budgetMin} onChange={e=>setFilters({...filters,budgetMin:e.target.value})} />
-                </label>
-                <label>
-                  <div>до</div>
-                  <input type="number" min="0" step="1" value={filters.budgetMax} onChange={e=>setFilters({...filters,budgetMax:e.target.value})} />
-                </label>
+        <>
+        <section style={{display:'block',marginBottom:24}}>
+          {/* Filters + Calendar Block */}
+          <div style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.12)',borderRadius:12,padding:16}}>
+            <div style={{display:'grid',gridTemplateColumns:'minmax(280px, 1fr) 1.2fr',gap:16,alignItems:'start'}}>
+              {/* Filters */}
+              <div style={{background:'transparent',border:'none',borderRadius:12,padding:0,marginBottom:0}}>
+                <div style={{display:'grid',gap:12,gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))',alignItems:'end'}}>
+                  <label>
+                    <div>Пошук</div>
+                    <input value={filters.q} onChange={e=>setFilters({...filters,q:e.target.value})} placeholder="локація або опис" />
+                  </label>
+                  <label>
+                    <div>Категорія</div>
+                    <select value={filters.category} onChange={e=>setFilters({...filters,category:e.target.value})} style={{width:'100%',padding:'10px 12px',border:'1px solid #e5e7eb',borderRadius:8,font:'inherit',height:40}}>
+                      <option value="all">всі</option>
+                      <option value="місто">місто</option>
+                      <option value="гора">гора</option>
+                      <option value="пляж">пляж</option>
+                      <option value="природа">природа</option>
+                      <option value="інше">інше</option>
+                    </select>
+                  </label>
+                  {activeTab==='memory' && (
+                    <label>
+                      <div>Настрій</div>
+                      <select value={filters.mood} onChange={e=>setFilters({...filters,mood:e.target.value})} style={{width:'100%',padding:'10px 12px',border:'1px solid #e5e7eb',borderRadius:8,font:'inherit',height:40}}>
+                        <option value="all">всі</option>
+                        <option value="super">супер</option>
+                        <option value="ok">ок</option>
+                        <option value="bad">погано</option>
+                      </select>
+                    </label>
+                  )}
+                  <label>
+                    <div>Тег</div>
+                    <input value={filters.tag} onChange={e=>setFilters({...filters,tag:e.target.value})} placeholder="пошук по тегу" />
+                  </label>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+                    <label>
+                      <div>Бюджет від</div>
+                      <input type="number" min="0" step="1" value={filters.budgetMin} onChange={e=>setFilters({...filters,budgetMin:e.target.value})} />
+                    </label>
+                    <label>
+                      <div>до</div>
+                      <input type="number" min="0" step="1" value={filters.budgetMax} onChange={e=>setFilters({...filters,budgetMax:e.target.value})} />
+                    </label>
+                  </div>
+                  <label>
+                    <div>Дата (день)</div>
+                    <input type="date" value={filters.dateExact} onChange={e=>setFilters({...filters,dateExact:e.target.value})} />
+                  </label>
+                </div>
+              </div>
+
+              {/* Calendar */}
+              <div style={{background:'transparent',border:'none',borderRadius:12,padding:0,marginBottom:0}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+                  <button type="button" onClick={()=>{const d=new Date(calendarMonth); d.setMonth(d.getMonth()-1); setCalendarMonth(d)}} style={{background:'#f3f4f6',border:'0',padding:'6px 10px',borderRadius:8,cursor:'pointer'}}>‹</button>
+                  <strong>{calendarMonth.toLocaleString('uk-UA',{month:'long', year:'numeric'})}</strong>
+                  <button type="button" onClick={()=>{const d=new Date(calendarMonth); d.setMonth(d.getMonth()+1); setCalendarMonth(d)}} style={{background:'#f3f4f6',border:'0',padding:'6px 10px',borderRadius:8,cursor:'pointer'}}>›</button>
+                </div>
+                <div style={{display:'flex',justifyContent:'flex-end',marginBottom:6}}>
+                  <button type="button" onClick={()=>setFilters(f=>({...f,dateExact:''}))} style={{background:'#e5e7eb',border:'0',padding:'6px 10px',borderRadius:8,cursor:'pointer',fontSize:12}}>Показати всі</button>
+                </div>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:6,fontSize:12,color:'#9ca3af',marginBottom:6}}>
+                  {['Пн','Вт','Ср','Чт','Пт','Сб','Нд'].map(d=> <div key={d} style={{textAlign:'center'}}>{d}</div>)}
+                </div>
+                {(() => {
+                  const days=[]
+                  const first=new Date(calendarMonth)
+                  const startIdx=(first.getDay()+6)%7
+                  for(let i=0;i<startIdx;i++) days.push(null)
+                  const last=new Date(calendarMonth); last.setMonth(last.getMonth()+1); last.setDate(0)
+                  for(let d=1; d<=last.getDate(); d++) days.push(d)
+                  const cellStyle={border:'1px solid rgba(255,255,255,0.08)',borderRadius:8,minHeight:64,padding:6,display:'grid',alignContent:'start',gap:6}
+                  const list = entries.filter(e=> e.type===activeTab && e.date)
+                  return (
+                    <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:6}}>
+                      {days.map((d,i)=>{
+                        if(d==null) return <div key={i} />
+                        const dateStr = `${calendarMonth.getFullYear()}-${String(calendarMonth.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
+                        const count = list.filter(e=> ymd(e.date)===dateStr).length
+                        return (
+                          <button key={i} onClick={()=>setFilters(f=>({...f,dateExact: dateStr}))} style={{...cellStyle, background: filters.dateExact===dateStr?'rgba(99,102,241,0.12)':'transparent', cursor:'pointer'}}>
+                            <div style={{textAlign:'right',color:'#9ca3af'}}>{d}</div>
+                            {count>0 && <div style={{justifySelf:'center',background:'#2563eb',color:'#fff',borderRadius:999,padding:'2px 8px',fontSize:12}}>{count}</div>}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )
+                })()}
               </div>
             </div>
           </div>
+        </section>
+        <section style={{display:'grid',gap:12}}>
           {entries.length === 0 && <div style={{color:'#6b7280'}}>Поки що немає записів. Додайте перший!</div>}
+          <div style={{display:'grid',gridTemplateColumns:`repeat(${cols}, 1fr)`,gap:16,width:'100%'}}>
           {entries
             .filter(e=> e.type === activeTab)
             .filter(e=> {
@@ -394,20 +491,26 @@ export default function App() {
                 const tags = (e.tags||[]).map(x=>x.toLowerCase())
                 if (!tags.some(x=>x.includes(t))) return false
               }
+              if (filters.dateExact && (!e.date || ymd(e.date)!==filters.dateExact)) return false
               if (filters.budgetMin !== '' && (e.budget==null || e.budget < Number(filters.budgetMin))) return false
               if (filters.budgetMax !== '' && (e.budget==null || e.budget > Number(filters.budgetMax))) return false
               return true
             })
             .map(entry => (
-            <JournalEntry
-              key={entry.id}
-              entry={entry}
-              onDelete={()=>removeEntry(entry.id)}
-              onView={()=>goToView(entry.id)}
-              onEdit={()=>openDetails(entry)}
-            />
+            <div key={entry.id} style={{width:'100%'}}>
+              <JournalEntry
+                entry={entry}
+                onDelete={()=>removeEntry(entry.id)}
+                onView={()=>goToView(entry.id)}
+                onEdit={()=>openDetails(entry)}
+                onConvert={()=>convertToMemory(entry.id)}
+                onReschedule={()=>rescheduleEntry(entry.id)}
+              />
+            </div>
           ))}
+          </div>
         </section>
+        </>
       )}
       {routeId && (() => {
         const entry = entries.find(e => e.id === routeId)
