@@ -33,6 +33,19 @@ header{background:linear-gradient(180deg, rgba(96,165,250,.10), rgba(30,64,175,.
 header h1{font-size:1.6rem;letter-spacing:.3px}
 header .tag{background:linear-gradient(135deg, var(--accent), var(--accent-600)); box-shadow:0 0 0 1px rgba(96,165,250,.35), 0 10px 24px rgba(56,189,248,.35)}
 
+/* Highlighted panel (Filters + Calendar) */
+.panel{
+  background: linear-gradient(180deg, rgba(2,6,23,.60), rgba(2,6,23,.40) 60%, rgba(2,6,23,.28));
+  border:1px solid color-mix(in hsl, var(--accent) 18%, var(--border));
+  box-shadow:
+    0 0 0 1px rgba(96,165,250,.08) inset,
+    0 16px 40px rgba(0,0,0,.35),
+    0 0 36px rgba(96,165,250,.08);
+  border-radius:12px;
+  padding:16px;
+  backdrop-filter: blur(6px);
+}
+
 /* Form */
 form{background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0));
   border:1px solid var(--border);
@@ -61,14 +74,17 @@ button:hover{filter:brightness(1.05)}
 /* Entries grid */
 section{grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)) !important}
 section article{
-  background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.00));
-  border:1px solid var(--border);
+  background:linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.00));
+  border:1px solid color-mix(in hsl, var(--accent) 8%, var(--border));
   border-radius:16px;
   padding:14px;
   box-shadow: 0 10px 30px rgba(0,0,0,.25);
   transition: transform .15s ease, box-shadow .2s ease;
 }
-section article:hover{transform: translateY(-2px); box-shadow: 0 16px 40px rgba(0,0,0,.30)}
+section article:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 16px 40px rgba(0,0,0,.30), 0 0 0 1px rgba(96,165,250,.10) inset;
+}
 
 /* Entry internals */
 article h3{font-size:1.1rem}

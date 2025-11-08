@@ -391,7 +391,7 @@ export default function App() {
         <>
         <section style={{display:'block',marginBottom:24}}>
           {/* Filters + Calendar Block */}
-          <div style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.12)',borderRadius:12,padding:16}}>
+          <div className="panel" style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.12)',borderRadius:12,padding:16}}>
             <div style={{display:'grid',gridTemplateColumns:'minmax(280px, 1fr) 1.2fr',gap:16,alignItems:'start'}}>
               {/* Filters */}
               <div style={{background:'transparent',border:'none',borderRadius:12,padding:0,marginBottom:0}}>
