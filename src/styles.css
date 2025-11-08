@@ -92,7 +92,14 @@ article img{border-radius:10px; border:1px solid var(--border)}
 article .meta{color:var(--muted); font-size:.9rem}
 
 /* Footer */
-footer{color:var(--muted)}
+footer{
+  color:var(--muted);
+  border-top:1px solid var(--border);
+  margin-top:32px;
+  padding:20px 0 28px;
+  text-align:center;
+}
+.footer-inner{ max-width:980px; margin:0 auto; padding:0 20px; }
 
 /* Install banner hint (optional future use) */
 .badge{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:rgba(59,130,246,.15);color:#93c5fd;border:1px solid rgba(59,130,246,.25)}

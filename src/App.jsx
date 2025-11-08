@@ -274,7 +274,6 @@ export default function App() {
     <div className="container">
       <header>
         <h1>Travel Journal</h1>
-        <span className="tag">PWA</span>
       </header>
 
       {/* Tabs */}
@@ -652,7 +651,7 @@ export default function App() {
       )}
 
       <footer>
-        Збереження в localStorage · Працює офлайн · Installable PWA
+        <div className="footer-inner">© {new Date().getFullYear()} · Всі права захищено · Працює офлайн</div>
       </footer>
 
       <style>{`
